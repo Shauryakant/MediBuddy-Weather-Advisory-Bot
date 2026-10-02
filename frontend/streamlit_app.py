@@ -289,82 +289,68 @@ def main():
     # Render Main Body
     render_header()
 
-    tab1, tab2 = st.tabs(["💬 Advisory Chat Bot", "🧪 Live Evaluation Suite Results (RESULTS.md)"])
-
-    with tab1:
-        # Render Quick-Select Chips
-        st.markdown("<div class=\"preset-title\">💡 Quick Select Sample Scenarios (Click to test instantly)</div>", unsafe_allow_html=True)
-        cols = st.columns(3)
-        for idx, preset in enumerate(PRESET_QUERIES):
-            col = cols[idx % 3]
-            if col.button(preset["label"], key=f"preset_{idx}", use_container_width=True):
-                st.session_state["pending_query"] = preset["query"]
-                st.rerun()
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # Render chat history
-        for idx, msg in enumerate(st.session_state["messages"]):
-            with st.chat_message(msg["role"]):
-                st.markdown(msg["content"])
-                # Display decision trace expander for assistant messages if present
-                if msg["role"] == "assistant" and idx in st.session_state["decision_traces"]:
-                    trace_info = st.session_state["decision_traces"][idx]
-                    with st.expander("🔍 Decision Trace & Policy Evidence"):
-                        loc = trace_info.get("Resolved Location", "Unknown")
-                        p_sop = trace_info.get("Primary SOP Matched", "None")
-                        p_title = trace_info.get("Primary SOP Title", "None")
-                        s_sops = ", ".join(trace_info.get("Secondary SOPs", [])) or "None"
-                        nodes = " ➔ ".join([str(n) for n in trace_info.get("Graph Nodes Visited", [])])
-                        primary_ev = trace_info.get("Primary Evidence Numbers", {})
-
-                        st.markdown(
-                            f"""
-                            <div class="trace-card">
-                                <div class="trace-grid">
-                                    <div class="trace-item"><div class="trace-label">Resolved Location</div><div class="trace-val">{loc}</div></div>
-                                    <div class="trace-item"><div class="trace-label">Primary SOP</div><div class="trace-val">{p_sop}</div></div>
-                                    <div class="trace-item"><div class="trace-label">Primary Title</div><div class="trace-val">{p_title}</div></div>
-                                    <div class="trace-item"><div class="trace-label">Secondary SOPs</div><div class="trace-val">{s_sops}</div></div>
-                                </div>
-                                <div class="trace-label" style="margin-top:8px;">Graph Execution Path</div>
-                                <div style="font-family:monospace; font-size:12px; color:#475569; background:#fff; padding:6px 10px; border-radius:6px; margin-top:4px;">{nodes}</div>
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-
-                        if primary_ev:
-                            st.markdown("**🎯 Primary SOP Evidence Numbers**")
-                            st.json(primary_ev)
-
-                        with st.expander("📊 Complete Weather Metric Payload (150 windowed metrics)"):
-                            st.caption("Live pre-computed metrics aggregated across time windows (now, today, morning, midday, afternoon, evening, night, tomorrow) for instantaneous SOP evaluation.")
-                            st.json(trace_info.get("Complete 150 Metric Payload", {}))
-
-        # Message limit check
-        if len(st.session_state["messages"]) >= MAX_SESSION_MESSAGES:
-            st.warning("⚠️ You have reached the maximum 20 messages for this chat session. Please click **'Start New Session'** in the sidebar to reset thread memory.")
-            return
-
-        # Chat Input
-        user_input = st.chat_input("Ask any outdoor activity, travel, or weather safety question...")
-        if user_input:
-            process_query(user_input)
+    # Render Quick-Select Chips
+    st.markdown("<div class=\"preset-title\">💡 Quick Select Sample Scenarios (Click to test instantly)</div>", unsafe_allow_html=True)
+    cols = st.columns(3)
+    for idx, preset in enumerate(PRESET_QUERIES):
+        col = cols[idx % 3]
+        if col.button(preset["label"], key=f"preset_{idx}", use_container_width=True):
+            st.session_state["pending_query"] = preset["query"]
             st.rerun()
 
-    with tab2:
-        st.markdown("### 🧪 Real Empirical Evaluation Results (`evals/RESULTS.md`)")
-        st.caption("Empirical benchmark test results across 10 evaluation categories (Cases A-J, 18 scenarios) verifying policy grounding, paraphrase robustness, monsoon scan, out-of-scope handling, adversarial resilience, multi-turn state memory, and 11th SOP extensibility.")
+    st.markdown("<br>", unsafe_allow_html=True)
 
-        results_path = root_dir / "evals" / "RESULTS.md"
-        if results_path.exists():
-            with open(results_path, "r", encoding="utf-8") as f:
-                content = f.read()
-            st.markdown(content)
-        else:
-            st.info("No `evals/RESULTS.md` file found. Run `python evals/run_evals.py` to generate real empirical test results.")
+    # Render chat history
+    for idx, msg in enumerate(st.session_state["messages"]):
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+            # Display decision trace expander for assistant messages if present
+            if msg["role"] == "assistant" and idx in st.session_state["decision_traces"]:
+                trace_info = st.session_state["decision_traces"][idx]
+                with st.expander("🔍 Decision Trace & Policy Evidence"):
+                    loc = trace_info.get("Resolved Location", "Unknown")
+                    p_sop = trace_info.get("Primary SOP Matched", "None")
+                    p_title = trace_info.get("Primary SOP Title", "None")
+                    s_sops = ", ".join(trace_info.get("Secondary SOPs", [])) or "None"
+                    nodes = " ➔ ".join([str(n) for n in trace_info.get("Graph Nodes Visited", [])])
+                    primary_ev = trace_info.get("Primary Evidence Numbers", {})
+
+                    st.markdown(
+                        f"""
+                        <div class="trace-card">
+                            <div class="trace-grid">
+                                <div class="trace-item"><div class="trace-label">Resolved Location</div><div class="trace-val">{loc}</div></div>
+                                <div class="trace-item"><div class="trace-label">Primary SOP</div><div class="trace-val">{p_sop}</div></div>
+                                <div class="trace-item"><div class="trace-label">Primary Title</div><div class="trace-val">{p_title}</div></div>
+                                <div class="trace-item"><div class="trace-label">Secondary SOPs</div><div class="trace-val">{s_sops}</div></div>
+                            </div>
+                            <div class="trace-label" style="margin-top:8px;">Graph Execution Path</div>
+                            <div style="font-family:monospace; font-size:12px; color:#475569; background:#fff; padding:6px 10px; border-radius:6px; margin-top:4px;">{nodes}</div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+                    if primary_ev:
+                        st.markdown("**🎯 Primary SOP Evidence Numbers**")
+                        st.json(primary_ev)
+
+                    with st.expander("📊 Complete Weather Metric Payload (150 windowed metrics)"):
+                        st.caption("Live pre-computed metrics aggregated across time windows (now, today, morning, midday, afternoon, evening, night, tomorrow) for instantaneous SOP evaluation.")
+                        st.json(trace_info.get("Complete 150 Metric Payload", {}))
+
+    # Message limit check
+    if len(st.session_state["messages"]) >= MAX_SESSION_MESSAGES:
+        st.warning("⚠️ You have reached the maximum 20 messages for this chat session. Please click **'Start New Session'** in the sidebar to reset thread memory.")
+        return
+
+    # Chat Input
+    user_input = st.chat_input("Ask any outdoor activity, travel, or weather safety question...")
+    if user_input:
+        process_query(user_input)
+        st.rerun()
 
 
 if __name__ == "__main__":
     main()
+
