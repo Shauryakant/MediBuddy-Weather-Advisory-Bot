@@ -27,24 +27,26 @@ MAX_SESSION_MESSAGES = 20
 
 PRESET_CATEGORIES = {
     "🏃 Outdoor Sports & Recreation": [
-        {"label": "🚴 Cycling in Bhopal", "query": "Is it safe to go cycling in Bhopal today?"},
-        {"label": "⚽ Outdoor Football in Delhi", "query": "Can we host a football match in Delhi this afternoon?"},
-        {"label": "🏃 Morning Run in Bangalore", "query": "Is morning jogging recommended in Bangalore tomorrow?"},
+        {"label": "🚴 Cycling in Bhopal", "query": "Is it safe to go cycling in Bhopal, Madhya Pradesh today?"},
+        {"label": "⚽ Outdoor Football in Delhi", "query": "Can we host a football match in Delhi, India this afternoon?"},
+        {"label": "🏃 Morning Run in Bangalore", "query": "Is morning jogging recommended in Bangalore, Karnataka tomorrow?"},
     ],
     "👶 Vulnerable & Sensitive Groups": [
-        {"label": "👶 Toddler Park Visit in Bhopal", "query": "Can I take my 3 year old toddler to the park in Bhopal today?"},
-        {"label": "👴 Elderly Walk in Jaipur", "query": "Is it safe for senior citizens to take an evening walk in Jaipur today?"},
+        {"label": "👶 Toddler Park Visit in Bhopal", "query": "Can I take my 3 year old toddler to the park in Bhopal, Madhya Pradesh today?"},
+        {"label": "👴 Elderly Walk in Jaipur", "query": "Is it safe for senior citizens to take an evening walk in Jaipur, Rajasthan today?"},
     ],
     "🚘 Travel & Road Trips": [
-        {"label": "🏔️ Leh Ladakh Road Trip", "query": "Taking a road trip to Leh Ladakh today"},
-        {"label": "🌧️ Cherrapunjee Monsoon Trip", "query": "Planning a road trip to Cherrapunji today"},
-        {"label": "🚗 Manali Mountain Drive", "query": "Driving from Delhi to Manali today, is the weather safe?"},
+        {"label": "🏔️ Leh Ladakh Road Trip", "query": "Taking a road trip to Leh, Ladakh today"},
+        {"label": "🌧️ Cherrapunjee Monsoon Trip", "query": "Planning a road trip to Cherrapunjee, Meghalaya today"},
+        {"label": "🚗 Manali Mountain Drive", "query": "Driving to Manali, Himachal Pradesh today, is the weather safe?"},
     ],
     "🌊 Water & Beach Activities": [
-        {"label": "🏖️ Juhu Beach Picnic", "query": "Is it a good day for a family picnic at Juhu Beach Mumbai midday?"},
-        {"label": "🪂 Scuba Diving in Delhi", "query": "Can I go scuba diving in Delhi today?"},
+        {"label": "🏖️ Juhu Beach Picnic", "query": "Is it a good day for a family picnic at Juhu Beach, Mumbai midday?"},
+        {"label": "🪂 Scuba Diving in Delhi", "query": "Can I go scuba diving in Delhi, India today?"},
     ]
 }
+
+
 
 ALL_PRESETS = [item for cat in PRESET_CATEGORIES.values() for item in cat]
 
