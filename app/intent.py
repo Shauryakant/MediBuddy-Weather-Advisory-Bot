@@ -95,23 +95,46 @@ def match_synonym_audience(query_text: str, available_audiences: List[str]) -> O
 
 
 def extract_heuristic_location(user_query: str) -> Optional[str]:
-    """Extracts location string using preposition patterns ('in/to/at/for/near <Location>') or known city tokens."""
-    match = re.search(r'\b(?:in|to|at|for|near|around)\s+([a-zA-Z0-9_-]+(?:\s+[a-zA-Z0-9_-]+){0,2})', user_query, re.IGNORECASE)
-    if match:
-        phrase = match.group(1).strip()
-        words = phrase.split()
-        stop_words = ["the", "this", "my", "a", "an", "morning", "evening", "today", "tomorrow", "afternoon", "night", "now", "here", "there", "road", "trip", "going", "driving", "travelling", "traveling"]
+    """Extracts location string using known city tokens or preposition patterns ('in/to/at/near <Location>')."""
+    q_lower = user_query.lower()
+
+    # Step 1: Check known cities / landmarks first to prevent false matches like 'for a family picnic'
+    known_cities = [
+        "juhu beach mumbai", "juhu beach", "bhopal", "mumbai", "delhi", "chennai", "kolkata",
+        "bangalore", "bengaluru", "jaipur", "cherrapunji", "cherrapunjee", "leh ladakh", "leh",
+        "ladakh", "manali", "shimla", "srinagar", "udaipur", "goa", "pondicherry", "puducherry",
+        "kochi", "cochin", "trivandrum", "thiruvananthapuram", "pune", "guwahati", "shillong",
+        "darjeeling", "gangtok", "rishikesh", "haridwar", "agra", "varanasi", "ratnagiri", "mangalore"
+    ]
+    for c in known_cities:
+        if c in q_lower:
+            return " ".join(w.capitalize() for w in c.split())
+
+    # Step 2: Use regex prepositions ('in/to/at/near/around') excluding activity/audience stop words
+    matches = re.findall(r'\b(?:in|to|at|near|around)\s+([a-zA-Z0-9_-]+(?:\s+[a-zA-Z0-9_-]+){0,2})', user_query, re.IGNORECASE)
+    stop_words = {
+        "the", "this", "my", "a", "an", "morning", "evening", "today", "tomorrow", "afternoon",
+        "night", "now", "here", "there", "road", "trip", "going", "driving", "travelling", "traveling",
+        "picnic", "family", "cycling", "jogging", "walking", "football", "exercise", "toddler", "kid",
+        "senior", "elderly", "match", "concert", "swimming", "scuba", "diving", "park"
+    }
+
+    for m in matches:
+        words = m.strip().split()
         clean_words = [w for w in words if w.lower() not in stop_words]
         if clean_words:
             return " ".join(w.capitalize() for w in clean_words)
 
-    q_lower = user_query.lower()
-    known = ["bhopal", "mumbai", "delhi", "chennai", "kolkata", "bangalore", "cherrapunji", "cherrapunjee", "leh", "ladakh", "ratnagiri", "mangalore"]
-    for c in known:
-        if c in q_lower:
-            return c.capitalize()
+    # Step 3: Fallback 'for' preposition only if clean words remain
+    for_match = re.search(r'\bfor\s+([a-zA-Z0-9_-]+(?:\s+[a-zA-Z0-9_-]+){0,2})', user_query, re.IGNORECASE)
+    if for_match:
+        words = for_match.group(1).strip().split()
+        clean_words = [w for w in words if w.lower() not in stop_words]
+        if clean_words:
+            return " ".join(w.capitalize() for w in clean_words)
 
     return None
+
 
 
 def parse_user_intent(
