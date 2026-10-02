@@ -1,0 +1,26 @@
+id: SOP-VUL-001
+title: Children Outdoor Heat & Sun Safety
+category: vulnerable_groups
+severity: warning
+priority: 75
+applies_to:
+  activities: ["*"]
+  audiences: ["child", "toddler", "kids", "infant"]
+match:
+  type: threshold
+  any_of:
+    - metric: apparent_temperature
+      agg: max
+      window: today
+      op: ">="
+      value: 36.0
+    - metric: uv_index
+      agg: max
+      window: midday
+      op: ">="
+      value: 7.0
+guidance: "Elevated heat and solar exposure risk for children, with apparent temperature reaching {apparent_temperature.max}°C and peak UV index at {uv_index.max}. Children overheat and dehydrate rapidly. Keep outdoor play short, mandate shaded areas, ensure constant hydration, and apply sunscreen."
+rationale: Children have lower thermal tolerance requiring lower thresholds (36°C apparent temp, 7 UV).
+owner: Pediatric Health Committee
+version: 1.0.0
+last_reviewed: "2026-10-01"

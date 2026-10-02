@@ -1,0 +1,32 @@
+id: SOP-SIT-002
+title: Severe Thunderstorm & Lightning Risk
+category: situational
+severity: danger
+priority: 90
+applies_to:
+  activities: ["*"]
+  audiences: ["*"]
+match:
+  type: threshold
+  any_of:
+    - metric: weather_code
+      agg: value
+      window: now
+      op: in
+      value: [95, 96, 99]
+    - all_of:
+        - metric: cape
+          agg: max
+          window: today
+          op: ">="
+          value: 1000.0
+        - metric: precipitation_probability
+          agg: max
+          window: today
+          op: ">="
+          value: 70.0
+guidance: "Severe thunderstorm and lightning risks detected with CAPE reaching {cape.max} J/kg and precipitation probability at {precipitation_probability.max}%. Seek indoor shelter immediately and avoid open fields, tall trees, and metal structures during outdoor activities."
+rationale: High atmospheric instability (CAPE) combined with rain probability triggers severe lightning risk.
+owner: Safety Operations Team
+version: 1.0.0
+last_reviewed: "2026-10-01"

@@ -1,0 +1,21 @@
+id: SOP-TRV-004
+title: Dense Driving Fog Warning
+category: travel
+severity: warning
+priority: 55
+applies_to:
+  activities: ["travel", "driving", "commute", "road_trip", "car"]
+  audiences: ["*"]
+match:
+  type: threshold
+  all_of:
+    - metric: visibility
+      agg: min
+      window: morning
+      op: "<="
+      value: 500.0
+guidance: "Dense fog severely limits morning visibility to {visibility.min} meters. High hazard for vehicular driving. Use low-beam headlights or fog lamps, avoid risky lane changes, and maintain a generous safe distance."
+rationale: Visibility <= 500m presents acute driving danger.
+owner: Travel & Transport Advisory
+version: 1.0.0
+last_reviewed: "2026-10-01"

@@ -1,0 +1,21 @@
+id: SOP-TRV-003
+title: Heavy Precipitation Travel Delay Advisory
+category: travel
+severity: caution
+priority: 45
+applies_to:
+  activities: ["travel", "driving", "commute", "road_trip", "car"]
+  audiences: ["*"]
+match:
+  type: threshold
+  all_of:
+    - metric: precipitation_probability
+      agg: max
+      window: today
+      op: ">="
+      value: 70.0
+guidance: "High precipitation probability at {precipitation_probability.max}%. Expect potential traffic disruptions, localized road waterlogging, and travel delays. Plan extra travel time and check transit routes before departure."
+rationale: Precip probability >= 70% warrants travel delay warning.
+owner: Travel & Transport Advisory
+version: 1.0.0
+last_reviewed: "2026-10-01"

@@ -1,0 +1,36 @@
+id: SOP-INF-001
+title: Pleasant & Clear Outdoor Weather Conditions
+category: leisure
+severity: info
+priority: 10
+applies_to:
+  activities: ["*"]
+  audiences: ["*"]
+match:
+  type: threshold
+  all_of:
+    - metric: temperature_2m
+      agg: max
+      window: today
+      op: "<="
+      value: 28.0
+    - metric: temperature_2m
+      agg: min
+      window: today
+      op: ">="
+      value: 16.0
+    - metric: wind_speed_10m
+      agg: max
+      window: today
+      op: "<="
+      value: 15.0
+    - metric: precipitation_probability
+      agg: max
+      window: today
+      op: "<="
+      value: 15.0
+guidance: "Weather conditions look pleasant with temperature reaching {temperature_2m.max}°C, mild wind at {wind_speed_10m.max} km/h, and rain probability at {precipitation_probability.max}%. Please note: weather conditions can change, this is not a guarantee of safety — stay alert to local weather updates."
+rationale: Informational guidance when overall weather metrics are exceptionally benign.
+owner: Safety Operations Team
+version: 1.0.0
+last_reviewed: "2026-10-01"

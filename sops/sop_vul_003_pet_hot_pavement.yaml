@@ -1,0 +1,21 @@
+id: SOP-VUL-003
+title: Hot Pavement Hazard for Pets
+category: vulnerable_groups
+severity: caution
+priority: 35
+applies_to:
+  activities: ["walking", "pet_walk", "dog_walk"]
+  audiences: ["pet", "dog", "puppy"]
+match:
+  type: threshold
+  all_of:
+    - metric: temperature_2m
+      agg: max
+      window: afternoon
+      op: ">="
+      value: 32.0
+guidance: "Air temperature reaching {temperature_2m.max}°C can elevate asphalt pavement temperatures past 50°C, risking severe paw pad burns. Walk pets during early morning or late evening, or test the pavement surface with the back of your hand for 7 seconds."
+rationale: Pavement heats up rapidly above 32°C air temp.
+owner: Veterinary Care Desk
+version: 1.0.0
+last_reviewed: "2026-10-01"

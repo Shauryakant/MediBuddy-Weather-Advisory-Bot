@@ -1,0 +1,26 @@
+id: SOP-EXE-002
+title: Moderate Heat Advisory for Outdoor Exercise
+category: exercise
+severity: caution
+priority: 40
+applies_to:
+  activities: ["exercise", "running", "cycling", "jogging", "sports", "workout", "biking"]
+  audiences: ["*"]
+match:
+  type: threshold
+  all_of:
+    - metric: apparent_temperature
+      agg: max
+      window: today
+      op: ">="
+      value: 34.0
+    - metric: apparent_temperature
+      agg: max
+      window: today
+      op: "<"
+      value: 40.0
+guidance: "Moderate heat conditions with heat index reaching {apparent_temperature.max}°C. Reduce workout intensity, take frequent hydration breaks, and avoid exercise during peak thermal hours."
+rationale: Warm conditions require hydration precautions during exercise.
+owner: Sports Safety Desk
+version: 1.0.0
+last_reviewed: "2026-10-01"

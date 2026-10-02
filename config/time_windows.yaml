@@ -1,0 +1,57 @@
+# Configured Time Windows (relative to query time or 00:00 local time)
+# Each window defines start_hour and end_hour offsets from reference point.
+
+now:
+  start_hour: 0
+  end_hour: 1
+  description: "Immediate current hour"
+
+today:
+  start_hour: 0
+  end_hour: 24
+  description: "Full day (0 to 24 hours ahead)"
+
+morning:
+  start_hour: 6
+  end_hour: 12
+  description: "Morning hours (6 AM to 12 PM)"
+
+this_morning:
+  start_hour: 6
+  end_hour: 12
+  description: "Morning hours (6 AM to 12 PM)"
+
+midday:
+  start_hour: 11
+  end_hour: 16
+  description: "Midday peak hours (11 AM to 4 PM)"
+
+afternoon:
+  start_hour: 12
+  end_hour: 17
+  description: "Afternoon hours (12 PM to 5 PM)"
+
+this_afternoon:
+  start_hour: 12
+  end_hour: 17
+  description: "Afternoon hours (12 PM to 5 PM)"
+
+evening:
+  start_hour: 17
+  end_hour: 22
+  description: "Evening hours (5 PM to 10 PM)"
+
+this_evening:
+  start_hour: 17
+  end_hour: 22
+  description: "Evening hours (5 PM to 10 PM)"
+
+night:
+  start_hour: 22
+  end_hour: 28
+  description: "Night hours (10 PM to 4 AM next day)"
+
+tomorrow:
+  start_hour: 24
+  end_hour: 48
+  description: "Tomorrow (24 to 48 hours ahead)"

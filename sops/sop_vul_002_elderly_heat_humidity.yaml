@@ -1,0 +1,26 @@
+id: SOP-VUL-002
+title: Elderly Heat & Humidity Stress Risk
+category: vulnerable_groups
+severity: warning
+priority: 72
+applies_to:
+  activities: ["*"]
+  audiences: ["elderly", "senior", "parents", "grandparents"]
+match:
+  type: threshold
+  all_of:
+    - metric: apparent_temperature
+      agg: max
+      window: today
+      op: ">="
+      value: 35.0
+    - metric: precipitation_probability
+      agg: max
+      window: today
+      op: ">="
+      value: 40.0
+guidance: "High heat and humidity stress for elderly individuals, with apparent temperature reaching {apparent_temperature.max}°C. High humidity impairs thermoregulation and increases cardiovascular load for seniors. Limit outdoor exposure and stay in climate-controlled indoor spaces."
+rationale: Combination of heat (>=35°C) and humidity (precip prob >=40%) poses cardiovascular stress on seniors.
+owner: Geriatric Safety Team
+version: 1.0.0
+last_reviewed: "2026-10-01"

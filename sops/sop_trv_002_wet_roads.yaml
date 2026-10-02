@@ -1,0 +1,26 @@
+id: SOP-TRV-002
+title: Wet Road Slippage Warning for Two-Wheelers
+category: travel
+severity: warning
+priority: 65
+applies_to:
+  activities: ["two_wheeler", "scooter", "motorcycle", "cycling", "biking", "bike_commute"]
+  audiences: ["*"]
+match:
+  type: threshold
+  all_of:
+    - metric: precipitation
+      agg: sum
+      window: today
+      op: ">="
+      value: 10.0
+    - metric: precipitation_probability
+      agg: max
+      window: today
+      op: ">="
+      value: 60.0
+guidance: "Wet road surfaces expected with rainfall accumulation of {precipitation.sum} mm and precipitation probability of {precipitation_probability.max}%. Road surfaces will be slick, significantly increasing skidding risk for two-wheelers. Maintain low speeds and extend braking distance."
+rationale: Rain accumulation combined with high probability creates hazardous road friction reduction.
+owner: Travel & Transport Advisory
+version: 1.0.0
+last_reviewed: "2026-10-01"

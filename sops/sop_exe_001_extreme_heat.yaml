@@ -1,0 +1,26 @@
+id: SOP-EXE-001
+title: Extreme Heat Stress Advisory for Outdoor Exercise
+category: exercise
+severity: danger
+priority: 80
+applies_to:
+  activities: ["exercise", "running", "cycling", "jogging", "sports", "workout", "biking"]
+  audiences: ["*"]
+match:
+  type: threshold
+  any_of:
+    - metric: apparent_temperature
+      agg: max
+      window: today
+      op: ">="
+      value: 40.0
+    - metric: temperature_2m
+      agg: max
+      window: today
+      op: ">="
+      value: 42.0
+guidance: "Extreme heat stress detected with heat index reaching {apparent_temperature.max}°C (actual temperature {temperature_2m.max}°C). High risk of heat stroke and severe heat exhaustion. Intense outdoor exercise, running, and cycling should be suspended."
+rationale: Apparent temperature above 40°C presents severe risk during physical exertion.
+owner: Sports Safety Desk
+version: 1.0.0
+last_reviewed: "2026-10-01"

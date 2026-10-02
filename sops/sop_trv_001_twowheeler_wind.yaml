@@ -1,0 +1,26 @@
+id: SOP-TRV-001
+title: High Wind Risk for Two-Wheelers and Cycling
+category: travel
+severity: warning
+priority: 70
+applies_to:
+  activities: ["cycling", "two_wheeler", "scooter", "motorcycle", "biking", "bike_commute"]
+  audiences: ["*"]
+match:
+  type: threshold
+  any_of:
+    - metric: wind_speed_10m
+      agg: max
+      window: today
+      op: ">="
+      value: 35.0
+    - metric: wind_gusts_10m
+      agg: max
+      window: today
+      op: ">="
+      value: 45.0
+guidance: "Strong winds detected with peak speeds of {wind_speed_10m.max} km/h and gusts reaching {wind_gusts_10m.max} km/h. High wind speeds create major lateral instability for two-wheelers and cyclists, presenting a safety hazard rather than mere discomfort. Reduce speed, avoid open elevated bridges, or use four-wheeler transport."
+rationale: Wind speeds above 35 km/h or gusts above 45 km/h threaten vehicle control on two wheels.
+owner: Travel & Transport Advisory
+version: 1.0.0
+last_reviewed: "2026-10-01"

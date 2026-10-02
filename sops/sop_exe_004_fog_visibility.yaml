@@ -1,0 +1,21 @@
+id: SOP-EXE-004
+title: Low Visibility Fog Advisory for Outdoor Exercise
+category: exercise
+severity: warning
+priority: 50
+applies_to:
+  activities: ["exercise", "running", "cycling", "jogging", "walking", "biking"]
+  audiences: ["*"]
+match:
+  type: threshold
+  all_of:
+    - metric: visibility
+      agg: min
+      window: today
+      op: "<="
+      value: 1000.0
+guidance: "Dense fog reduces visibility down to {visibility.min} meters. Reduced visibility presents severe hazards for outdoor runners and cyclists from traffic. Wear high-visibility reflective gear, use active lighting, or switch to indoor exercise."
+rationale: Visibility <= 1000m compromises traffic safety for pedestrians and cyclists.
+owner: Sports Safety Desk
+version: 1.0.0
+last_reviewed: "2026-10-01"

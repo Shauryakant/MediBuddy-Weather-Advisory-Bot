@@ -1,0 +1,44 @@
+id: SOP-SIT-001
+title: Active Heavy-Rain System Advisory
+category: situational
+severity: danger
+priority: 100
+applies_to:
+  activities: ["*"]
+  audiences: ["*"]
+overrides: "all"
+match:
+  type: threshold
+  any_of:
+    - metric: precipitation
+      agg: sum
+      window: today
+      op: ">="
+      value: 64.5
+    - all_of:
+        - metric: precipitation
+          agg: sum
+          window: morning
+          op: ">="
+          value: 40.0
+        - metric: pressure_msl
+          agg: delta
+          window: today
+          op: "<="
+          value: -4.0
+    - all_of:
+        - metric: weather_code
+          agg: value
+          window: now
+          op: in
+          value: [63, 65, 81, 82, 95, 96, 99]
+        - metric: precipitation
+          agg: sum
+          window: today
+          op: ">="
+          value: 30.0
+guidance: "An active heavy-rain weather system (24h precipitation total {precipitation.sum} mm) is affecting the area. All outdoor activities carry severe safety risks due to potential flash flooding, waterlogging, and hazardous conditions. Avoid non-essential outdoor movement and check official IMD alerts."
+rationale: Combined meteorological signals indicate a widespread low-pressure or severe rain system affecting all activities.
+owner: Safety Operations Team
+version: 1.0.0
+last_reviewed: "2026-10-01"

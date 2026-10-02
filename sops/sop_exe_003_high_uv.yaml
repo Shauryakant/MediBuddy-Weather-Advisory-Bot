@@ -1,0 +1,21 @@
+id: SOP-EXE-003
+title: Midday High UV Index Advisory
+category: exercise
+severity: warning
+priority: 60
+applies_to:
+  activities: ["exercise", "running", "cycling", "jogging", "sports", "walking", "park", "biking"]
+  audiences: ["*"]
+match:
+  type: threshold
+  all_of:
+    - metric: uv_index
+      agg: max
+      window: midday
+      op: ">="
+      value: 8.0
+guidance: "High UV index peaking at {uv_index.max} during midday (11 AM - 4 PM). Risk of rapid sunburn and sun damage. Avoid unprotected outdoor exertion in midday hours, apply SPF 30+ sunscreen, wear protective eyewear, or reschedule to early morning/evening."
+rationale: UV index >= 8 indicates very high solar radiation risk requiring sun protection.
+owner: Sports Safety Desk
+version: 1.0.0
+last_reviewed: "2026-10-01"

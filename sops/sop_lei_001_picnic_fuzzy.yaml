@@ -1,0 +1,21 @@
+id: SOP-LEI-001
+title: Outdoor Picnic & Event Suitability (Fuzzy Policy)
+category: leisure
+severity: caution
+priority: 30
+applies_to:
+  activities: ["picnic", "get_together", "outdoor_event", "bbq", "outing", "party"]
+  audiences: ["*"]
+match:
+  type: fuzzy
+  rubric: "Assess whether conditions are suitable for an outdoor picnic/gathering. Good: temperature 18-30°C, wind < 20 km/h, precipitation probability < 20%. Mixed: temperature 30-35°C or wind 20-30 km/h or precipitation probability 20-50%. Poor: temperature > 35°C, wind > 30 km/h, rain probability > 50%, or active rain."
+  evidence_metrics: ["temperature_2m", "apparent_temperature", "wind_speed_10m", "precipitation_probability", "precipitation"]
+  verdicts:
+    good: "Weather conditions are ideal for an outdoor picnic! Expect comfortable temperatures around {temperature_2m.max}°C, manageable wind at {wind_speed_10m.max} km/h, and low rain probability ({precipitation_probability.max}%)."
+    mixed: "Conditions for an outdoor picnic are marginal. With temperatures near {temperature_2m.max}°C, winds around {wind_speed_10m.max} km/h, and rain probability at {precipitation_probability.max}%, consider having a backup indoor spot or shelter available."
+    poor: "Unfavorable conditions for an outdoor picnic due to challenging weather (temperature {temperature_2m.max}°C, wind {wind_speed_10m.max} km/h, rain probability {precipitation_probability.max}%). It is recommended to reschedule or move the event indoors."
+guidance: "Picnic suitability evaluated based on thermal comfort, wind, and rain likelihood."
+rationale: Non-numeric qualitative assessment for leisure outdoor gatherings.
+owner: Community Event Desk
+version: 1.0.0
+last_reviewed: "2026-10-01"
