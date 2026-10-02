@@ -6,7 +6,7 @@
 ---
 
 ### 📺 System Demo & Walkthrough Video
-[![Watch Demo Video](https://img.shields.gr/badge/YouTube-Watch%20System%20Demo-red?style=for-the-badge&logo=youtube)](YOUR_YOUTUBE_VIDEO_LINK_HERE)  
+[![Watch Demo Video](https://img.shields.gr/badge/YouTube-Watch%20System%20Demo-red?style=for-the-badge&logo=youtube)](https://youtu.be/etJs34g3ZWk)  
 *Click the badge above to watch the full system walkthrough, architecture overview, and live execution demo.*
 
 ---
