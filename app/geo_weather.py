@@ -32,7 +32,6 @@ def geocode_location(location_text: str, base_url: str = GEOCODING_API_URL) -> O
     try:
         with httpx.Client(timeout=5.0) as client:
             resp = client.get(base_url, params=params)
-            # 1 retry if status not ok
             if resp.status_code != 200:
                 resp = client.get(base_url, params=params)
 
@@ -73,7 +72,6 @@ def fetch_weather(
     if not metrics:
         metrics = {"temperature_2m", "apparent_temperature", "wind_speed_10m", "precipitation"}
 
-    # Standardize field names for Open-Meteo
     hourly_fields = sorted(list(metrics))
     current_fields = [m for m in ["temperature_2m", "apparent_temperature", "wind_speed_10m", "precipitation", "weather_code"] if m in metrics]
     if not current_fields:
@@ -92,7 +90,6 @@ def fetch_weather(
         with httpx.Client(timeout=5.0) as client:
             resp = client.get(base_url, params=params)
             if resp.status_code != 200:
-                # 1 retry
                 resp = client.get(base_url, params=params)
 
             if resp.status_code != 200:
@@ -125,7 +122,6 @@ def aggregate_metrics(
     windows_config = load_time_windows()
     current_data = weather_data.get("current", {})
 
-    # Determine reference index in hourly data
     ref_index = 0
     if "time" in current_data:
         curr_time_str = current_data["time"]
@@ -146,18 +142,22 @@ def aggregate_metrics(
             aggregated[f"{m}.mean.now"] = val
             aggregated[f"{m}.delta.now"] = 0.0
 
-    # Process each metric and window
     available_hourly_metrics = [k for k in hourly.keys() if k != "time"]
 
     for window_name, win_info in windows_config.items():
         start_offset = win_info.get("start_hour", 0)
         end_offset = win_info.get("end_hour", 24)
 
-        s_idx = max(0, ref_index + start_offset)
-        e_idx = min(len(times), ref_index + end_offset)
+        if window_name in ["today", "morning", "midday", "afternoon", "evening", "night", "tomorrow"]:
+            # Absolute hour offsets relative to 00:00 start of day
+            s_idx = max(0, start_offset)
+            e_idx = min(len(times), end_offset)
+        else:
+            # Relative to current hour
+            s_idx = max(0, ref_index + start_offset)
+            e_idx = min(len(times), ref_index + end_offset)
 
         if s_idx >= len(times) or s_idx >= e_idx:
-            # Fallback to full available slice
             s_idx = 0
             e_idx = min(24, len(times))
 

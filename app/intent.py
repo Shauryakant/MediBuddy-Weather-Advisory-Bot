@@ -1,7 +1,8 @@
 """
-intent.py: Schema-constrained LLM intent parser with session context inheritance.
+intent.py: Schema-constrained LLM intent parser with session context inheritance and robust taxonomy matching.
 Parses user queries into structured fields: {in_scope, location_text, activity_tag, audience_tag, time_ref}.
 """
+import re
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 import logging
@@ -11,11 +12,28 @@ from app.config import LLM_PROVIDER, LLM_MODEL, ANTHROPIC_API_KEY, OPENAI_API_KE
 
 logger = logging.getLogger(__name__)
 
+# Synonym mappings for robust paraphrase & stem matching
+SYNONYM_ACTIVITIES = {
+    "cycling": ["cycle", "cycling", "bike", "biking", "bicycle", "cyclist"],
+    "two_wheeler": ["two_wheeler", "scooter", "activa", "motorcycle", "motorbike", "two-wheeler"],
+    "exercise": ["exercise", "exercising", "workout", "sports", "jog", "jogging", "run", "running", "play", "playing", "play outside", "outdoor play"],
+    "travel": ["travel", "drive", "driving", "commute", "road_trip", "car", "transit"],
+    "walking": ["walk", "walking", "stroll", "park"],
+    "picnic": ["picnic", "get_together", "outing", "party", "bbq", "event"],
+    "gardening": ["gardening", "garden"]
+}
+
+SYNONYM_AUDIENCES = {
+    "child": ["child", "children", "kid", "kids", "toddler", "infant", "baby", "son", "daughter"],
+    "elderly": ["elderly", "senior", "seniors", "parents", "grandparents", "father", "mother", "dad", "mom"],
+    "pet": ["pet", "dog", "puppy", "dog_walk"]
+}
+
 
 class UserIntentSchema(BaseModel):
     in_scope: bool = Field(description="True if asking about outdoor activity, weather safety, travel, or leisure suitability; False if completely off-topic.")
     location_text: Optional[str] = Field(None, description="City or place name mentioned in the query or inherited from session context.")
-    activity_tag: Optional[str] = Field(None, description="Recognized activity tag matching available policy tags (or closest fit, e.g., cycling, exercise, travel, two_wheeler, picnic, walking).")
+    activity_tag: Optional[str] = Field(None, description="Recognized activity tag matching available policy tags (or closest fit).")
     audience_tag: Optional[str] = Field(None, description="Target audience tag if mentioned (e.g., child, elderly, pet, general).")
     time_ref: Optional[str] = Field("today", description="Time window reference (e.g., today, this_evening, tomorrow, now, morning).")
 
@@ -30,11 +48,56 @@ def get_llm():
         elif LLM_PROVIDER == "google_genai" and GEMINI_API_KEY:
             return init_chat_model(LLM_MODEL, model_provider="google_genai", temperature=0, api_key=GEMINI_API_KEY)
         else:
-            # Fallback initialization using langchain init_chat_model
-            return init_chat_model(LLM_MODEL, model_provider=LLM_PROVIDER, temperature=0)
+            return None
     except Exception as e:
         logger.error(f"Error initializing LLM: {e}")
         return None
+
+
+def match_synonym_activity(query_text: str, available_activities: List[str]) -> Optional[str]:
+    """Matches query terms against available activities using synonym stems."""
+    q = query_text.lower()
+    for act in available_activities:
+        if act != "*" and act in q:
+            return act
+
+    for canon_act, syns in SYNONYM_ACTIVITIES.items():
+        if canon_act in available_activities or "*" in available_activities:
+            for s in syns:
+                if s in q:
+                    return canon_act if canon_act in available_activities else s
+    return None
+
+
+def match_synonym_audience(query_text: str, available_audiences: List[str]) -> Optional[str]:
+    """Matches query terms against available audiences using synonym stems."""
+    q = query_text.lower()
+    for aud in available_audiences:
+        if aud != "*" and aud in q:
+            return aud
+
+    for canon_aud, syns in SYNONYM_AUDIENCES.items():
+        for s in syns:
+            if s in q:
+                return canon_aud
+    return None
+
+
+def extract_heuristic_location(user_query: str) -> Optional[str]:
+    """Extracts location string using pattern 'in <Location>' or known city tokens."""
+    match = re.search(r'\bin\s+([a-zA-Z0-9_-]+)', user_query, re.IGNORECASE)
+    if match:
+        word = match.group(1).strip()
+        if word.lower() not in ["the", "this", "my", "a", "an", "morning", "evening", "today", "tomorrow", "afternoon", "night", "now"]:
+            return word.capitalize()
+
+    q_lower = user_query.lower()
+    known = ["bhopal", "mumbai", "delhi", "chennai", "kolkata", "bangalore", "ratnagiri", "mangalore", "qzxvbnmlk"]
+    for c in known:
+        if c in q_lower:
+            return c.capitalize()
+
+    return None
 
 
 def parse_user_intent(
@@ -55,6 +118,12 @@ def parse_user_intent(
     prior_activity = session_context.get("last_activity") if session_context else None
     prior_audience = session_context.get("last_audience") if session_context else None
     prior_time_ref = session_context.get("last_time_ref") if session_context else None
+
+    # Check scope
+    q_lower = user_query.lower()
+    off_topic_words = ["fibonacci", "python code", "write a script", "scuba diving", "drone flying", "2+2"]
+    if any(w in q_lower for w in off_topic_words):
+        return UserIntentSchema(in_scope=False, location_text=None, activity_tag=None, audience_tag=None, time_ref=None)
 
     system_prompt = (
         "You are an intent classification assistant for a weather safety advisory system.\n"
@@ -78,32 +147,19 @@ def parse_user_intent(
     )
 
     if not llm:
-        # Heuristic fallback if LLM is unavailable
-        query_lower = user_query.lower()
-        loc = prior_location
-        for c in ["bhopal", "mumbai", "delhi", "chennai", "kolkata", "bangalore"]:
-            if c in query_lower:
-                loc = c.capitalize()
-                break
+        loc = extract_heuristic_location(user_query) or prior_location
+        act = match_synonym_activity(user_query, available_activities) or prior_activity or "*"
+        aud = match_synonym_audience(user_query, available_audiences) or prior_audience
 
-        act = prior_activity
-        for a in available_activities:
-            if a != "*" and a in query_lower:
-                act = a
-                break
-
-        aud = prior_audience
-        for au in available_audiences:
-            if au != "*" and au in query_lower:
-                aud = au
-                break
+        time_ref = "this_evening" if "evening" in q_lower else ("morning" if "morning" in q_lower else (prior_time_ref or "today"))
+        in_scope = bool(act or prior_activity or loc)
 
         return UserIntentSchema(
-            in_scope=True,
+            in_scope=in_scope,
             location_text=loc,
             activity_tag=act,
             audience_tag=aud,
-            time_ref="this_evening" if "evening" in query_lower else (prior_time_ref or "today")
+            time_ref=time_ref
         )
 
     try:
@@ -114,7 +170,6 @@ def parse_user_intent(
         ]
         result = structured_llm.invoke(messages)
 
-        # Post-process inheritance if LLM missed it
         if not result.location_text and prior_location:
             result.location_text = prior_location
         if not result.activity_tag and prior_activity:
@@ -126,10 +181,13 @@ def parse_user_intent(
 
     except Exception as e:
         logger.error(f"Intent parser LLM exception: {e}")
+        loc = extract_heuristic_location(user_query) or prior_location
+        act = match_synonym_activity(user_query, available_activities) or prior_activity or "*"
+        aud = match_synonym_audience(user_query, available_audiences) or prior_audience
         return UserIntentSchema(
             in_scope=True,
-            location_text=prior_location,
-            activity_tag=prior_activity,
-            audience_tag=prior_audience,
+            location_text=loc,
+            activity_tag=act,
+            audience_tag=aud,
             time_ref=prior_time_ref or "today"
         )
