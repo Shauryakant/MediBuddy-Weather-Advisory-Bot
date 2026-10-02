@@ -15,30 +15,69 @@ FORECAST_API_URL = "https://api.open-meteo.com/v1/forecast"
 
 
 def _query_open_meteo_geocode(query: str, base_url: str) -> Optional[Dict[str, Any]]:
-    """Helper to issue a single geocoding request to Open-Meteo."""
+    """Helper to issue a single geocoding request to Open-Meteo with population ranking."""
     if not query or not query.strip():
         return None
-    params = {
-        "name": query.strip(),
-        "count": 1,
-        "language": "en",
-        "format": "json"
+
+    CITY_ALIASES = {
+        "bangalore": "Bengaluru",
+        "cherrapunji": "Cherrapunjee",
+        "bombay": "Mumbai",
+        "calcutta": "Kolkata",
+        "madras": "Chennai",
+        "poona": "Pune",
+        "baroda": "Vadodara",
+        "cochin": "Kochi",
+        "trivandrum": "Thiruvananthapuram",
+        "calicut": "Kozhikode",
+        "pondicherry": "Puducherry",
     }
+
+    q_str = query.strip()
+    q_lower = q_str.lower()
+
+    search_queries = [q_str]
+    for k, v in CITY_ALIASES.items():
+        if k in q_lower and q_lower.replace(k, v) not in search_queries:
+            search_queries.append(q_lower.replace(k, v))
+
+    candidates = []
     try:
         with httpx.Client(timeout=5.0) as client:
-            resp = client.get(base_url, params=params)
-            if resp.status_code != 200:
+            for sq in search_queries:
+                params = {
+                    "name": sq,
+                    "count": 10,
+                    "language": "en",
+                    "format": "json"
+                }
                 resp = client.get(base_url, params=params)
-            if resp.status_code != 200:
-                return None
-            data = resp.json()
-            results = data.get("results")
-            if not results or len(results) == 0:
-                return None
-            return results[0]
+                if resp.status_code == 200:
+                    data = resp.json()
+                    results = data.get("results")
+                    if results:
+                        candidates.extend(results)
+
+        if not candidates:
+            return None
+
+        # Score candidates based on population and administrative feature code
+        def score(r):
+            pop = r.get("population") or 0
+            feat = r.get("feature_code", "")
+            feat_score = 0
+            if feat in ["PPLC", "PPLA"]:
+                feat_score = 1000000
+            elif feat in ["PPLA2", "PPL"]:
+                feat_score = 100000
+            return pop + feat_score
+
+        sorted_candidates = sorted(candidates, key=score, reverse=True)
+        return sorted_candidates[0]
     except Exception as e:
         logger.error(f"Geocoding query exception for '{query}': {e}")
         return None
+
 
 
 def geocode_location(location_text: str, base_url: str = GEOCODING_API_URL) -> Optional[Dict[str, Any]]:
