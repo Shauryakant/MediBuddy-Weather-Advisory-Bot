@@ -30,11 +30,12 @@ def get_secret_or_env(key: str, default: Optional[str] = None) -> Optional[str]:
     return default
 
 # LLM Configuration
-LLM_PROVIDER = get_secret_or_env("LLM_PROVIDER", "anthropic")
-LLM_MODEL = get_secret_or_env("LLM_MODEL", "claude-3-5-sonnet-20241022")
+LLM_PROVIDER = get_secret_or_env("LLM_PROVIDER", "groq")
+LLM_MODEL = get_secret_or_env("LLM_MODEL", "llama-3.3-70b-versatile")
+GROQ_API_KEY = get_secret_or_env("GROQ_API_KEY")
 ANTHROPIC_API_KEY = get_secret_or_env("ANTHROPIC_API_KEY")
 OPENAI_API_KEY = get_secret_or_env("OPENAI_API_KEY")
-GEMINI_API_KEY = get_secret_or_env("GEMINI_API_KEY")
+GEMINI_API_KEY = get_secret_or_env("GEMINI_API_KEY") or get_secret_or_env("GOOGLE_API_KEY")
 
 def load_time_windows() -> Dict[str, Dict[str, Any]]:
     """Load time window definitions from config/time_windows.yaml."""

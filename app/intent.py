@@ -41,12 +41,23 @@ class UserIntentSchema(BaseModel):
 def get_llm():
     """Initializes provider-agnostic chat model with temperature=0."""
     try:
-        if LLM_PROVIDER == "anthropic" and ANTHROPIC_API_KEY:
+        from app.config import GROQ_API_KEY, ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, LLM_PROVIDER, LLM_MODEL
+        if LLM_PROVIDER == "groq" and GROQ_API_KEY:
+            return init_chat_model(LLM_MODEL, model_provider="groq", temperature=0, api_key=GROQ_API_KEY)
+        elif LLM_PROVIDER == "anthropic" and ANTHROPIC_API_KEY:
             return init_chat_model(LLM_MODEL, model_provider="anthropic", temperature=0, api_key=ANTHROPIC_API_KEY)
         elif LLM_PROVIDER == "openai" and OPENAI_API_KEY:
             return init_chat_model(LLM_MODEL, model_provider="openai", temperature=0, api_key=OPENAI_API_KEY)
         elif LLM_PROVIDER == "google_genai" and GEMINI_API_KEY:
             return init_chat_model(LLM_MODEL, model_provider="google_genai", temperature=0, api_key=GEMINI_API_KEY)
+        elif GROQ_API_KEY:
+            return init_chat_model("llama-3.3-70b-versatile", model_provider="groq", temperature=0, api_key=GROQ_API_KEY)
+        elif ANTHROPIC_API_KEY:
+            return init_chat_model("claude-3-5-sonnet-20241022", model_provider="anthropic", temperature=0, api_key=ANTHROPIC_API_KEY)
+        elif OPENAI_API_KEY:
+            return init_chat_model("gpt-4o", model_provider="openai", temperature=0, api_key=OPENAI_API_KEY)
+        elif GEMINI_API_KEY:
+            return init_chat_model("gemini-1.5-pro", model_provider="google_genai", temperature=0, api_key=GEMINI_API_KEY)
         else:
             return None
     except Exception as e:
