@@ -38,13 +38,12 @@ def extract_numbers_from_text(text: str) -> List[float]:
     return numbers
 
 
-def build_allowed_numbers_set(allowed_numbers_dict: Dict[str, Any]) -> Set[float]:
+def build_allowed_api_numbers_set(allowed_numbers_dict: Dict[str, Any]) -> Set[float]:
     """
-    Builds a comprehensive set of allowed numeric values including exact floats,
-    integers, rounded values (+/- 1.0 for temperature rounding), and standard time numbers.
+    Builds set of numeric values allowed from API weather data.
+    Includes exact floats, rounded values, and integer representations.
     """
-    allowed: Set[float] = set(STANDARD_TIME_NUMBERS)
-
+    allowed: Set[float] = set()
     for k, val in allowed_numbers_dict.items():
         if val is None:
             continue
@@ -54,12 +53,10 @@ def build_allowed_numbers_set(allowed_numbers_dict: Dict[str, Any]) -> Set[float
             allowed.add(round(f_val, 1))
             allowed.add(float(int(round(f_val))))
             allowed.add(float(int(f_val)))
-            # Allow ceiling/floor for slight rounding
             allowed.add(float(int(f_val) + 1))
             allowed.add(float(int(f_val) - 1))
         except (ValueError, TypeError):
             pass
-
     return allowed
 
 
@@ -72,16 +69,22 @@ def validate_number_grounding(
     Returns (is_valid, ungrounded_numbers_list).
     """
     found_numbers = extract_numbers_from_text(response_text)
-    allowed_set = build_allowed_numbers_set(allowed_numbers_dict)
+    api_allowed_set = build_allowed_api_numbers_set(allowed_numbers_dict)
+    time_allowed_set = set(STANDARD_TIME_NUMBERS)
 
     ungrounded = []
     for num in found_numbers:
-        # Check if num or int(num) or round(num,1) is in allowed_set
-        if (num not in allowed_set and
-            float(int(num)) not in allowed_set and
-            round(num, 1) not in allowed_set and
-            round(num, 0) not in allowed_set):
-            ungrounded.append(num)
+        # 1. Exact float match or rounded match against API numbers
+        if (num in api_allowed_set or
+            round(num, 1) in api_allowed_set or
+            float(int(num)) in api_allowed_set):
+            continue
+
+        # 2. Exact match against time numbers (only if exact integer in response)
+        if num.is_integer() and int(num) in time_allowed_set:
+            continue
+
+        ungrounded.append(num)
 
     is_valid = len(ungrounded) == 0
     return is_valid, ungrounded

@@ -13,22 +13,18 @@ logger = logging.getLogger(__name__)
 def fill_guidance_placeholders(template: str, evidence_numbers: Dict[str, Any], aggregated_metrics: Dict[str, Any]) -> str:
     """
     Fills placeholders in guidance templates like {temperature_2m.max} or {precipitation.sum}
-    with actual numbers from API evidence.
+    with actual numbers from API metrics.
     """
     if not template:
         return ""
 
     filled = template
-
-    # Merge evidence and aggregated numbers
     merged = {}
-    merged.update(aggregated_metrics)
     merged.update(evidence_numbers)
+    merged.update(aggregated_metrics)
 
-    # Format placeholders
     for k, v in merged.items():
         if v is not None:
-            # Matches {metric.agg} e.g. {temperature_2m.max} or exact key {temperature_2m.max.today}
             k_short = ".".join(k.split(".")[:2]) if len(k.split(".")) >= 3 else k
             placeholder_exact = f"{{{k}}}"
             placeholder_short = f"{{{k_short}}}"
@@ -59,8 +55,7 @@ def deterministic_render_fallback(
 
     lines = [
         f"For **{location_name}** ({time_ref}):",
-        f"\n**[{p_id}] {p_title}**:",
-        f"{p_text}"
+        f"\n**[{p_id}] {p_title}**:\n{p_text}"
     ]
 
     if secondary_sops:
@@ -109,6 +104,12 @@ def compose_answer_with_llm(
 
     prior_decision_log = session_context.get("last_decision_log") if session_context else None
 
+    # Filter numbers to keep prompt lightweight (< 400 tokens) for Groq/LLM TPM limits
+    compact_numbers = {}
+    compact_numbers.update(p_evidence)
+    for s in secondary_sops:
+        compact_numbers.update(s.get("evidence_numbers", {}))
+
     prompt_data = (
         "You are MediBuddy's Weather-Advisory Support Bot.\n"
         "Phrase a concise, helpful reply based ONLY on the approved policy guidance and API numbers below.\n\n"
@@ -116,8 +117,9 @@ def compose_answer_with_llm(
         "1. You MUST cite the Primary SOP ID explicitly in your answer (e.g. '[SOP-TRV-001]').\n"
         "2. If secondary SOPs are listed, cite their SOP IDs under an 'Also applicable' section.\n"
         "3. Every numerical figure in your output MUST match numbers present in the provided policy guidance or allowed API metrics.\n"
-        "4. Do NOT make up your own safety advice or numbers.\n"
-        "5. If prior turn decision context is provided, ensure your response maintains consistency with prior turns.\n\n"
+        "4. DO NOT alter or replace numerical values present in the Primary Policy Guidance text (e.g., if guidance text says 33.4°C and 7.5, you MUST keep 33.4 and 7.5 exactly).\n"
+        "5. Do NOT make up your own safety advice or numbers.\n"
+        "6. If prior turn decision context is provided, ensure your response maintains consistency with prior turns.\n\n"
         f"LOCATION: {location_name}\n"
         f"TIME WINDOW: {time_ref}\n\n"
         f"PRIMARY POLICY GUIDANCE:\n"
@@ -125,7 +127,7 @@ def compose_answer_with_llm(
         f"Title: {p_title}\n"
         f"Guidance Text: {p_guidance}\n\n"
         f"SECONDARY POLICIES: {secondaries_formatted}\n\n"
-        f"ALLOWED WEATHER NUMBERS: {aggregated_metrics}\n\n"
+        f"EVIDENCE NUMBERS: {compact_numbers}\n\n"
         f"PRIOR TURN DECISION LOG: {prior_decision_log}\n"
     )
 

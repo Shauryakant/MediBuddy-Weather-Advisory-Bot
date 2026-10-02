@@ -14,49 +14,119 @@ GEOCODING_API_URL = "https://geocoding-api.open-meteo.com/v1/search"
 FORECAST_API_URL = "https://api.open-meteo.com/v1/forecast"
 
 
-def geocode_location(location_text: str, base_url: str = GEOCODING_API_URL) -> Optional[Dict[str, Any]]:
-    """
-    Geocodes a location text using Open-Meteo Geocoding API.
-    Returns dict with name, latitude, longitude, admin1, country or None on failure/empty.
-    """
-    if not location_text or not location_text.strip():
+def _query_open_meteo_geocode(query: str, base_url: str) -> Optional[Dict[str, Any]]:
+    """Helper to issue a single geocoding request to Open-Meteo."""
+    if not query or not query.strip():
         return None
-
     params = {
-        "name": location_text.strip(),
+        "name": query.strip(),
         "count": 1,
         "language": "en",
         "format": "json"
     }
-
     try:
         with httpx.Client(timeout=5.0) as client:
             resp = client.get(base_url, params=params)
             if resp.status_code != 200:
                 resp = client.get(base_url, params=params)
-
             if resp.status_code != 200:
-                logger.error(f"Geocoding HTTP error {resp.status_code} for {location_text}")
                 return None
-
             data = resp.json()
             results = data.get("results")
             if not results or len(results) == 0:
-                logger.info(f"No geocoding results found for '{location_text}'")
                 return None
-
-            first = results[0]
-            return {
-                "name": first.get("name", location_text),
-                "latitude": float(first.get("latitude")),
-                "longitude": float(first.get("longitude")),
-                "admin1": first.get("admin1", ""),
-                "country": first.get("country", ""),
-                "display_name": f"{first.get('name')}, {first.get('admin1', '')}, {first.get('country', '')}".strip(", ")
-            }
+            return results[0]
     except Exception as e:
-        logger.error(f"Geocoding exception for '{location_text}': {e}")
+        logger.error(f"Geocoding query exception for '{query}': {e}")
         return None
+
+
+def geocode_location(location_text: str, base_url: str = GEOCODING_API_URL) -> Optional[Dict[str, Any]]:
+    """
+    Geocodes a location text using Open-Meteo Geocoding API with smart landmark fallbacks.
+    Returns dict with name, latitude, longitude, admin1, country or None on failure/empty.
+    """
+    if not location_text or not location_text.strip():
+        return None
+
+    query = location_text.strip()
+    first = _query_open_meteo_geocode(query, base_url)
+
+    # Check if a multi-word query (like "Leh Ladakh") gets a better match with comma formatting ("Leh, Ladakh")
+    tokens = [t.strip() for t in query.replace(",", " ").split() if len(t.strip()) >= 2]
+    if len(tokens) >= 2:
+        comma_query = ", ".join(tokens)
+        comma_res = _query_open_meteo_geocode(comma_query, base_url)
+        if comma_res:
+            # Prefer comma_res if first is missing, or if comma_res has a larger population / major admin region
+            if not first or comma_res.get("population", 0) > first.get("population", 0) or comma_res.get("admin1"):
+                first = comma_res
+
+    # Fallback 1: Strip landmark words (e.g. "Juhu Beach Mumbai" -> "Juhu Mumbai")
+    if not first:
+        import re
+        cleaned = re.sub(r'\b(beach|park|stadium|lake|garden|fort|temple|airport|station|resort|road|street|hill|mount)\b', '', query, flags=re.IGNORECASE).strip()
+        if cleaned and cleaned.lower() != query.lower():
+            first = _query_open_meteo_geocode(cleaned, base_url)
+
+    # Fallback 2: Extract city/last token (e.g. "Juhu Beach Mumbai" -> "Mumbai")
+    if not first:
+        if tokens:
+            city_query = tokens[-1]
+            first = _query_open_meteo_geocode(city_query, base_url)
+
+    # Fallback 3: Transliteration & city alias mappings (e.g. "Cherrapunji" -> "Cherrapunjee")
+    if not first:
+        CITY_ALIASES = {
+            "cherrapunji": "Cherrapunjee",
+            "pondicherry": "Puducherry",
+            "trivandrum": "Thiruvananthapuram",
+            "calicut": "Kozhikode",
+            "cochin": "Kochi",
+            "baroda": "Vadodara",
+            "poona": "Pune",
+            "calcutta": "Kolkata",
+            "bombay": "Mumbai",
+            "madras": "Chennai",
+            "bangalore": "Bengaluru",
+        }
+        query_lower = query.lower()
+        alt_name = None
+        for k, v in CITY_ALIASES.items():
+            if k in query_lower:
+                alt_name = query_lower.replace(k, v)
+                break
+        if not alt_name and query_lower.endswith("ji"):
+            alt_name = query[:-2] + "jee"
+
+        if alt_name:
+            first = _query_open_meteo_geocode(alt_name, base_url)
+
+    # Fallback 4: Fuzzy Typo Matching against known locations (e.g. "chernujee" -> "Cherrapunjee")
+    if not first:
+        import difflib
+        KNOWN_LOCATIONS = [
+            "Cherrapunjee", "Cherrapunji", "Mumbai", "Bhopal", "Delhi", "Kolkata", "Chennai", "Bangalore",
+            "Bengaluru", "Shimla", "Manali", "Leh", "Ladakh", "Srinagar", "Jaipur", "Udaipur", "Goa",
+            "Pondicherry", "Puducherry", "Kochi", "Cochin", "Thiruvananthapuram", "Trivandrum", "Guwahati",
+            "Shillong", "Darjeeling", "Gangtok", "Rishikesh", "Haridwar", "Agra", "Varanasi", "Pune"
+        ]
+        close = difflib.get_close_matches(query.capitalize(), KNOWN_LOCATIONS, n=1, cutoff=0.45)
+        if close:
+            first = _query_open_meteo_geocode(close[0], base_url)
+
+    if not first:
+        logger.info(f"No geocoding results found for '{location_text}'")
+        return None
+
+    return {
+        "name": first.get("name", location_text),
+        "latitude": float(first.get("latitude")),
+        "longitude": float(first.get("longitude")),
+        "admin1": first.get("admin1", ""),
+        "country": first.get("country", ""),
+        "display_name": f"{first.get('name')}, {first.get('admin1', '')}, {first.get('country', '')}".strip(", ")
+    }
 
 
 def fetch_weather(

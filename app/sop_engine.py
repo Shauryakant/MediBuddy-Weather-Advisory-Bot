@@ -157,14 +157,14 @@ def evaluate_fuzzy_sop(
         verdict = "mixed"
         reason = "Evaluated via default heuristic."
     else:
+        judge_prompt = (
+            "You are an impartial weather safety evaluator judging outdoor conditions against a strict rubric.\n"
+            "You must output ONLY one of the following exact verdicts: 'good', 'mixed', or 'poor', along with a short reason.\n\n"
+            f"RUBRIC:\n{rubric}\n\n"
+            f"OBSERVED WEATHER EVIDENCE NUMBERS:\n{evidence}\n\n"
+            "Evaluate the evidence against the rubric and select the appropriate verdict."
+        )
         try:
-            judge_prompt = (
-                "You are an impartial weather safety evaluator judging outdoor conditions against a strict rubric.\n"
-                "You must output ONLY one of the following exact verdicts: 'good', 'mixed', or 'poor', along with a short reason.\n\n"
-                f"RUBRIC:\n{rubric}\n\n"
-                f"OBSERVED WEATHER EVIDENCE NUMBERS:\n{evidence}\n\n"
-                "Evaluate the evidence against the rubric and select the appropriate verdict."
-            )
             structured_llm = llm.with_structured_output(FuzzyVerdictOutput)
             response = structured_llm.invoke([SystemMessage(content=judge_prompt)])
             verdict = response.verdict.lower().strip()
@@ -172,9 +172,21 @@ def evaluate_fuzzy_sop(
             if verdict not in verdicts:
                 verdict = "mixed"
         except Exception as e:
-            logger.error(f"Fuzzy LLM judge error for {sop.id}: {e}")
-            verdict = "mixed"
-            reason = f"LLM evaluation fallback: {e}"
+            logger.warning(f"Structured output failed for {sop.id} ({e}), falling back to direct prompt parsing.")
+            try:
+                raw_resp = llm.invoke([SystemMessage(content=judge_prompt + "\n\nRespond clearly starting with your verdict word ('good', 'mixed', or 'poor') followed by a brief reason.")])
+                content = str(raw_resp.content).lower().strip()
+                if content.startswith("good") or "verdict: good" in content or "'good'" in content or '"good"' in content:
+                    verdict = "good"
+                elif content.startswith("poor") or "verdict: poor" in content or "'poor'" in content or '"poor"' in content:
+                    verdict = "poor"
+                else:
+                    verdict = "mixed"
+                reason = raw_resp.content.strip()
+            except Exception as e2:
+                logger.error(f"Fuzzy LLM judge fallback error for {sop.id}: {e2}")
+                verdict = "mixed"
+                reason = f"LLM evaluation fallback: {e2}"
 
     guidance_template = verdicts.get(verdict, list(verdicts.values())[0] if verdicts else sop.guidance)
 

@@ -51,7 +51,7 @@ def get_llm():
         elif LLM_PROVIDER == "google_genai" and GEMINI_API_KEY:
             return init_chat_model(LLM_MODEL, model_provider="google_genai", temperature=0, api_key=GEMINI_API_KEY)
         elif GROQ_API_KEY:
-            return init_chat_model("llama-3.3-70b-versatile", model_provider="groq", temperature=0, api_key=GROQ_API_KEY)
+            return init_chat_model("openai/gpt-oss-120b", model_provider="groq", temperature=0, api_key=GROQ_API_KEY)
         elif ANTHROPIC_API_KEY:
             return init_chat_model("claude-3-5-sonnet-20241022", model_provider="anthropic", temperature=0, api_key=ANTHROPIC_API_KEY)
         elif OPENAI_API_KEY:
@@ -95,15 +95,18 @@ def match_synonym_audience(query_text: str, available_audiences: List[str]) -> O
 
 
 def extract_heuristic_location(user_query: str) -> Optional[str]:
-    """Extracts location string using pattern 'in <Location>' or known city tokens."""
-    match = re.search(r'\bin\s+([a-zA-Z0-9_-]+)', user_query, re.IGNORECASE)
+    """Extracts location string using preposition patterns ('in/to/at/for/near <Location>') or known city tokens."""
+    match = re.search(r'\b(?:in|to|at|for|near|around)\s+([a-zA-Z0-9_-]+(?:\s+[a-zA-Z0-9_-]+){0,2})', user_query, re.IGNORECASE)
     if match:
-        word = match.group(1).strip()
-        if word.lower() not in ["the", "this", "my", "a", "an", "morning", "evening", "today", "tomorrow", "afternoon", "night", "now"]:
-            return word.capitalize()
+        phrase = match.group(1).strip()
+        words = phrase.split()
+        stop_words = ["the", "this", "my", "a", "an", "morning", "evening", "today", "tomorrow", "afternoon", "night", "now", "here", "there", "road", "trip", "going", "driving", "travelling", "traveling"]
+        clean_words = [w for w in words if w.lower() not in stop_words]
+        if clean_words:
+            return " ".join(w.capitalize() for w in clean_words)
 
     q_lower = user_query.lower()
-    known = ["bhopal", "mumbai", "delhi", "chennai", "kolkata", "bangalore", "ratnagiri", "mangalore", "qzxvbnmlk"]
+    known = ["bhopal", "mumbai", "delhi", "chennai", "kolkata", "bangalore", "cherrapunji", "cherrapunjee", "leh", "ladakh", "ratnagiri", "mangalore"]
     for c in known:
         if c in q_lower:
             return c.capitalize()

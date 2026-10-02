@@ -163,7 +163,8 @@ def match_sops_node(state: AdvisoryState) -> Dict[str, Any]:
 
         # Activity matching: "*" or exact match
         act_match = ("*" in sop_acts) or (act_tag in sop_acts)
-        aud_match = ("*" in sop_auds) or (aud_tag in sop_auds) or (aud_tag is None)
+        # Audience matching: "*" (applies to everyone) or exact audience match
+        aud_match = ("*" in sop_auds) or (aud_tag is not None and aud_tag in sop_auds)
 
         if not act_match or not aud_match:
             continue

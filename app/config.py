@@ -1,12 +1,16 @@
 """
 config.py: Environment setup, configuration loader, and time window definitions.
-Supports os.environ with fallback to st.secrets for Streamlit Cloud.
+Supports os.environ with fallback to .env and st.secrets for Streamlit Cloud.
 """
 import os
 from pathlib import Path
 from typing import Dict, Any, Optional
 import yaml
 import logging
+from dotenv import load_dotenv
+
+# Load .env file automatically
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -19,19 +23,19 @@ TIME_WINDOWS_FILE = CONFIG_DIR / "time_windows.yaml"
 def get_secret_or_env(key: str, default: Optional[str] = None) -> Optional[str]:
     """Retrieve key from environment variables, with fallback to st.secrets."""
     val = os.environ.get(key)
-    if val:
-        return val
+    if val and val.strip():
+        return val.strip()
     try:
         import streamlit as st
         if hasattr(st, "secrets") and key in st.secrets:
-            return str(st.secrets[key])
+            return str(st.secrets[key]).strip()
     except Exception:
         pass
     return default
 
 # LLM Configuration
 LLM_PROVIDER = get_secret_or_env("LLM_PROVIDER", "groq")
-LLM_MODEL = get_secret_or_env("LLM_MODEL", "llama-3.3-70b-versatile")
+LLM_MODEL = get_secret_or_env("LLM_MODEL", "openai/gpt-oss-120b")
 GROQ_API_KEY = get_secret_or_env("GROQ_API_KEY")
 ANTHROPIC_API_KEY = get_secret_or_env("ANTHROPIC_API_KEY")
 OPENAI_API_KEY = get_secret_or_env("OPENAI_API_KEY")
